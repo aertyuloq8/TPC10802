@@ -91,50 +91,51 @@
             padding: 0 2px;
         }
         .legend-panel {
-            position: absolute;
-            bottom: 25px;
-            left: 15px;
-            z-index: 1000;
-            background: rgba(255,255,255,0.98);
-            padding: 15px 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            max-height: 70vh;
-            overflow-y: auto;
-            min-width: 260px;
-            transition: all 0.3s ease;
-        }
-        .legend-header {
-            cursor: pointer;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #2c3e50;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            user-select: none;
-        }
-        .legend-header::after {
-            content: '▼';
-            font-size: 12px;
-            transition: transform 0.3s ease;
-        }
-        .legend-panel.legend-collapsed .legend-header::after {
-            transform: rotate(-90deg);
-        }
-        .legend-content {
-            max-height: 500px;
-            overflow: hidden;
-            transition: all 0.3s ease-in-out;
-        }
-        .legend-panel.legend-collapsed .legend-content {
-            max-height: 0 !important;
-            opacity: 0;
-        }
+        position: absolute;
+        bottom: 25px;
+        left: 15px;
+        z-index: 1000;
+        background: rgba(255,255,255,0.98);
+        padding: 15px 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        max-height: 70vh;
+        overflow-y: auto;
+        min-width: 260px;
+        transition: all 0.3s ease;
+    }
+    .legend-header {
+        cursor: pointer;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #2c3e50;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        user-select: none;
+    }
+    .legend-header::after {
+        content: '▼'; /* 預設顯示 ▼ */
+        font-size: 12px;
+        transition: transform 0.3s ease;
+    }
+    .legend-panel.legend-collapsed .legend-header::after {
+        content: '►'; /* 當摺疊時顯示 ► */
+    }
+    .legend-content {
+        max-height: 500px;
+        overflow: auto;
+        transition: all 0.3s ease-in-out;
+    }
+    .legend-panel.legend-collapsed .legend-content {
+        max-height: 0 !important;
+        opacity: 0;
+        display: none;
+    }
         .legend-control-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -232,7 +233,7 @@
         var map = L.map('map', {
             zoomControl: true,
             preferCanvas: true
-        }).setView([23.0, 120.2], 12);
+        }).setView([23.0467, 120.1842], 12);
 
         // 添加地圖底圖
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -256,7 +257,10 @@
     },
     metric: true
 }).addTo(map);
-
+// 在定位完成後手動設定地圖縮放
+map.on('locationfound', function(e) {
+    map.setView(e.latlng, 12);  // 16 是想要的縮放級別
+});
 // 預設為桌面端設置，給定位控件添加 padding
 locateControl.getContainer().style.paddingBottom = '20px';
 
@@ -293,6 +297,7 @@ if (window.innerWidth <= 768) {
         var uniqueFeixian = [...new Set(geojsonData.features.map(f => f.properties.饋線))];
         var colorMap = generateColorHash(uniqueFeixian);
         
+        uniqueFeixian.sort();// 按照字母順序排序 uniqueFeixian
         uniqueFeixian.forEach(f => {
             feixianGroups[f] = L.layerGroup().addTo(map);
         });
@@ -301,7 +306,7 @@ if (window.innerWidth <= 768) {
         geojsonData.features.forEach(feature => {
             var marker = L.circleMarker(
                 [feature.geometry.coordinates[1], feature.geometry.coordinates[0]], 
-                {
+                {  
                     radius: 8,
                     fillColor: colorMap[feature.properties.饋線],
                     color: '#2c3e50',
