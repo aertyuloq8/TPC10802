@@ -243,8 +243,8 @@
     position: 'bottomright',
     drawCircle: true,
     showPopup: true,
-    setView: 'untilPanOrZoom',
-    keepCurrentZoomLevel: true,
+      setView: 'always',  // 設定為 always，強制定位後改變視圖
+    keepCurrentZoomLevel: false,  // 改為 false 讓縮放級別改變
     locateOptions: {
         enableHighAccuracy: true,
         maxZoom: 18
