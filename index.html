@@ -195,31 +195,20 @@
 </head>
 <body>
     <div id="map"></div>
-    <!-- 頂部標題欄 -->
+<!-- 頂部標題欄 -->
+
 <div style="position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg, #2c3e50, #3498db);padding:12px 20px;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
     <div style="max-width:1200px;margin:0 auto;color:white;text-align:center;">
         <h1 style="margin:0;font-size:22px;font-weight:600;letter-spacing:1.2px;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">
             用戶變壓器地理資訊
         </h1>
         <p style="margin:5px 0 0;font-size:13px;opacity:0.95;">
-            基於配電圖資 new & CMMS 建置｜僅供參考｜資料更新：<span id="timestamp"></span>
+            基於配電圖資 new & CMMS 建置｜資料僅供參考
         </p>
     </div>
 </div>
 
-<script>
-    function updateTimestamp() {
-        let now = new Date();
-        let formattedTime = now.getFullYear() + "-" + 
-                            String(now.getMonth() + 1).padStart(2, '0') + "-" + 
-                            String(now.getDate()).padStart(2, '0') + " " + 
-                            String(now.getHours()).padStart(2, '0') + ":" + 
-                            String(now.getMinutes()).padStart(2, '0');
-        document.getElementById("timestamp").innerText = formattedTime;
-    }
-    updateTimestamp(); // 立即執行一次
-    setInterval(updateTimestamp, 60000); // 每分鐘更新一次
-</script>
+</div>
     <div class="search-container">
         <div class="search-box">
             <input type="text" id="search-input" placeholder="輸入土木設備或圖號座標..." autocomplete="off">
@@ -490,5 +479,6 @@ if (window.innerWidth <= 768) {
         
     </script>
 </body>
+
 </html>
     
