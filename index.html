@@ -125,6 +125,12 @@
     }
     .legend-panel.legend-collapsed .legend-header::after {
         content: '►'; /* 當摺疊時顯示 ► */
+    .legend-panel.legend-collapsed .legend-header {
+    margin-bottom: 0; /* 移除底部間距 */
+}
+    .legend-panel.legend-collapsed {
+    padding: 8px 12px !important; /* 摺疊時縮減內邊距 */
+    }    
     }
     .legend-content {
         max-height: 500px;
@@ -416,10 +422,10 @@ if (window.innerWidth <= 768) {
         // 圖例控制面板（已修覆折疊功能）
        var legend = L.control({position: 'bottomleft'});
         legend.onAdd = function(map) {
-            var div = L.DomUtil.create('div', 'legend-panel');
+            var div = L.DomUtil.create('div', 'legend-panel legend-collapsed');
             div.innerHTML = `
                 <div class="legend-header" onclick="toggleLegend()">
-                    <span>▼ 饋線圖例控制</span>
+                    <span>▶ 饋線圖例控制</span>
                 </div>
                 <div class="legend-control-buttons">
                     <button onclick="toggleAll(true)">全部顯示</button>
@@ -441,6 +447,11 @@ if (window.innerWidth <= 768) {
             return div;
         };
         legend.addTo(map);
+setTimeout(() => {
+    const panel = document.querySelector('.legend-panel');
+    panel.classList.add('legend-collapsed');
+    panel.querySelector('.legend-content').style.display = 'none';
+}, 100);
 
         // 修覆後的折疊函數
         window.toggleLegend = function() {
