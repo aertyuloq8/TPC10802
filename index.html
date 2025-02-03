@@ -239,25 +239,32 @@
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // 添加定位控件（已修覆圖標顯示）
-        var locateControl = L.control.locate({
-            position: 'bottomright',
-            drawCircle: true,
-            showPopup: true,
-            setView: 'untilPanOrZoom',
-            keepCurrentZoomLevel: true,
-            locateOptions: {
-                enableHighAccuracy: true,
-                maxZoom: 18
-            },
-            strings: {
-                title: "定位我的位置",
-                popup: "您在此位置 {distance} 米範圍內",
-                outsideMapBoundsMsg: "目前位置超出地圖範圍"
-            },
-            
-            metric: true
-        }).addTo(map);
+       var locateControl = L.control.locate({
+    position: 'bottomright',
+    drawCircle: true,
+    showPopup: true,
+    setView: 'untilPanOrZoom',
+    keepCurrentZoomLevel: true,
+    locateOptions: {
+        enableHighAccuracy: true,
+        maxZoom: 18
+    },
+    strings: {
+        title: "定位我的位置",
+        popup: "您在此位置 {distance} 米範圍內",
+        outsideMapBoundsMsg: "目前位置超出地圖範圍"
+    },
+    metric: true
+}).addTo(map);
+
+// 預設為桌面端設置，給定位控件添加 padding
+locateControl.getContainer().style.paddingBottom = '20px';
+
+// 使用媒體查詢針對手機調整定位控件的 padding
+if (window.innerWidth <= 768) {
+    locateControl.getContainer().style.paddingBottom = '40px';  // 在手機上使用較大的 padding
+}
+
 
         // 強制更新定位控件樣式
         setTimeout(() => {
