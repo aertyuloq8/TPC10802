@@ -543,15 +543,24 @@ function updateSuggestions(query) {
                 ${highlightMatch(item.text, q)}
             `;
             div.onclick = () => {
-                map.setView(item.latlng, 18);
-                const layer = findMarkerByProperties(item.device, item.coord);
-                if (layer) {
-                    layer.openPopup();
-                    layer._icon.classList.add('bounce-marker');
-                    setTimeout(() => layer._icon.classList.remove('bounce-marker'), 1000);
-                }
-                suggestionsList.style.display = 'none';
-            };
+    map.setView(item.latlng, 18);
+    const layer = findMarkerByProperties(item.device, item.coord);
+    if (layer) {
+        //  放置您的程式碼片段 <<<<<<  關鍵放置位置
+        var targetGroup = feixianGroups[layer.feature.properties.饋線]; //  確保 targetFeixian 是正確的，這裡從 layer.feature.properties.饋線 取得
+        if (targetGroup && targetGroup.zoomToShowLayer) { // 確保 targetGroup 存在且有 zoomToShowLayer 方法
+            targetGroup.zoomToShowLayer(layer, function() {
+                layer.openPopup(); //  放在 zoomToShowLayer 的 callback 中確保縮放完成後才開 popup
+            });
+        } else {
+            layer.openPopup(); // 如果沒有 zoomToShowLayer 方法，則直接打開 Popup
+        }
+
+        layer._icon.classList.add('bounce-marker');
+        setTimeout(() => layer._icon.classList.remove('bounce-marker'), 1000);
+    }
+    suggestionsList.style.display = 'none';
+};
             fragment.appendChild(div);
         });
     } else {
