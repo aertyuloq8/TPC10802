@@ -1,1 +1,83 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+    <title>電號分佈熱力圖</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <style>
+        #map { height: 800px; }
+        .info.legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <h2>電號分佈熱力圖</h2>
+    <div id="map"></div>
+    
+    <script src="map_data.js"></script>
+
+    <script>
+        var map = L.map('map').setView([23.0563299, 120.2186076], 13);
+        
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var heat_1055 = L.heatLayer(data_1055, { radius: 25, blur: 15, gradient: {0.4: 'yellow', 0.6: 'orange', 1.0: 'red'} });
+        var heat_1056 = L.heatLayer(data_1056, { radius: 25, blur: 15, gradient: {0.4: '#6a0dad', 0.6: '#9d00ff', 1.0: 'blue'} });
+        var heat_1057 = L.heatLayer(data_1057, { radius: 25, blur: 15, gradient: {0.4: '#006400', 0.6: '#009a00', 1.0: 'green'} });
+        var heat_1068 = L.heatLayer(data_1068, { radius: 25, blur: 15, gradient: {0.4: '#800080', 0.6: '#a020f0', 1.0: 'purple'} });
+
+        var baseLayers = { "地圖底圖": L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png') };
+        var overlayMaps = {
+            "1055系列熱力圖": heat_1055,
+            "1056系列熱力圖": heat_1056,
+            "1057系列熱力圖": heat_1057,
+            "1068系列熱力圖": heat_1068
+        };
+
+        L.control.layers(baseLayers, overlayMaps).addTo(map);
+
+        map.addLayer(heat_1055);
+        map.addLayer(heat_1056);
+        map.addLayer(heat_1057);
+        map.addLayer(heat_1068);
+
+        var allPoints = [...data_1055, ...data_1056, ...data_1057, ...data_1068];
+        if (allPoints.length > 0) {
+            var bounds = L.latLngBounds(allPoints);
+            map.fitBounds(bounds);
+        }
+        
+        var labelColors = {
+            '1055': 'red',
+            '1056': 'blue',
+            '1057': 'green',
+            '1068': 'purple'
+        };
+
+        for (const [key, value] of Object.entries(label_positions)) {
+            if (!isNaN(value.lat) && !isNaN(value.lon)) {
+                L.marker([value.lat, value.lon], {
+                    icon: L.divIcon({
+                        className: 'regional-label',
+                        html: '<div style="background-color: rgba(255,255,255,0.7); padding: 5px 10px; border-radius: 5px; border: 2px solid ' + labelColors[key] + '; font-weight: bold; font-size: 16px; color: ' + labelColors[key] + ';">' + key + '</div>',
+                        iconSize: [60, 20],
+                        iconAnchor: [30, 10]
+                    })
+                }).addTo(map);
+            }
+        }
+        
+    </script>
+</body>
+</html>
