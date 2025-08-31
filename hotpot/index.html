@@ -6,29 +6,129 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Heatmap -->
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-
-    <!-- Marker Cluster -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
-    <!-- Leaflet Search -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-search@3.0.6/dist/leaflet-search.min.css" />
-    <script src="https://unpkg.com/leaflet-search@3.0.6/dist/leaflet-search.src.js"></script>
-
-    <!-- Leaflet EasyPrint -->
-    <script src="https://unpkg.com/leaflet-easyprint@2.1.9/dist/bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
-        #map { height: 800px; }
-        .info.legend {
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #map {
+            flex-grow: 1;
+        }
+        .map-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            padding: 12px 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .header-title {
+            text-align: center;
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .header-title p {
+            margin: 5px 0 0;
+            font-size: 13px;
+        }
+        
+        /* 地圖上的搜尋與匯出控制項 */
+        .leaflet-control-search-export {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 5px;
+            width: 200px;
+        }
+        #search-input {
+            width: 100%;
+            border: none;
+            padding: 0 10px;
+            font-size: 14px;
+            outline: none;
+        }
+        #clear-search {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #999;
+            font-size: 20px;
+            padding: 0 5px;
+            display: none;
+        }
+        .suggestions-container {
+            position: relative;
+        }
+        #suggestions-list {
             background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 0 0 5px 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 200px;
+            z-index: 1002;
+        }
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        #export-button {
+            height: 35px;
+            padding: 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 自訂圖例與圖層控制項的樣式 */
+        .leaflet-control-legend-layers {
+            background: rgba(255, 255, 255, 0.8);
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
@@ -36,7 +136,7 @@
             line-height: 18px;
             color: #333;
         }
-        .legend-item {
+        .legend-item, .layer-item {
             display: flex;
             align-items: center;
             margin-bottom: 5px;
@@ -47,69 +147,97 @@
             margin-right: 8px;
             border: 1px solid #999;
         }
+        .layer-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        /* 隱藏和顯示的樣式 */
+        .legend-content {
+            display: none;
+        }
+        .legend-content.visible {
+            display: block;
+        }
+        .legend-header {
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
-    <h2>電號分佈圖</h2>
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg, #2c3e50, #3498db);padding:12px 20px;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+    <div style="max-width:1200px;margin:0 auto;color:white;text-align:center;">
+        <h1 style="margin:0;font-size:22px;font-weight:600;letter-spacing:1.2px;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">
+            電號分佈圖資訊
+        </h1>
+        <p style="margin:5px 0 0;font-size:13px;opacity:0.95;">
+            基於配電圖資 new & CMMS 建置｜資料僅供參考
+        </p>
+    </div>
+</div>
+
+    
     <div id="map"></div>
     
     <script src="map_data.js"></script>
 
     <script>
-        var map = L.map('map').setView([23.045608340363422, 120.19123596730388], 13);
-
+        var map = L.map('map').setView([23.045617088585487, 120.19117665576083], 13);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // 顏色清單
         var colorPalette = ["red", "blue", "green", "purple", "orange", "#6a0dad", "#009a00", "#ff1493", "#00ced1", "#8b4513"];
-        var overlayMaps = {};
-        var allPoints = [];
+        var layers = {};
         var legendItems = [];
+        var searchMarker = null;
 
-        // 建立 熱力圖 & 點圖
         var i = 0;
         for (const [prefix, coords] of Object.entries(data_dict)) {
             if (coords.length === 0) continue;
             var color = colorPalette[i % colorPalette.length];
             i++;
 
-            // 熱力圖
             var heatLayer = L.heatLayer(coords, { radius: 25, blur: 15, gradient: {0.4: color, 0.65: color, 1.0: color} });
-            overlayMaps[prefix + " 系列 (熱力圖)"] = heatLayer;
-            map.addLayer(heatLayer);
-
-            // 點圖 (Cluster)
+            
             var markerCluster = L.markerClusterGroup();
-            coords.forEach(function(c) {
-                var marker = L.circleMarker(c, {
+            var fullData = Object.values(search_data).filter(item => item.電號.startsWith(prefix));
+            fullData.forEach(function(d) {
+                var marker = L.circleMarker([d.lat, d.lon], {
                     radius: 6,
                     color: color,
                     fillColor: color,
                     fillOpacity: 0.7
                 });
+                
+                marker.bindPopup("<b>電號:</b> " + d.電號);
+
                 markerCluster.addLayer(marker);
             });
-            overlayMaps[prefix + " 系列 (點圖)"] = markerCluster;
-            allPoints = allPoints.concat(coords);
+            
+            layers[prefix + '_heat'] = heatLayer;
+            layers[prefix + '_markers'] = markerCluster;
 
-            // 圖例
+            // 調整後：熱力圖預設顯示
+            map.addLayer(heatLayer);
+
             legendItems.push({prefix: prefix, color: color});
         }
 
-        // 加入圖層控制
-        L.control.layers(null, overlayMaps).addTo(map);
+        var allPoints = [];
+        for (const key in search_data) {
+            allPoints.push([search_data[key].lat, search_data[key].lon]);
+        }
 
-        // 自動縮放
         if (allPoints.length > 0) {
             map.fitBounds(L.latLngBounds(allPoints));
         }
 
-        // 標籤 & 搜尋資料
         var i = 0;
-        var searchData = [];
         for (const [key, value] of Object.entries(label_positions)) {
             if (!isNaN(value.lat) && !isNaN(value.lon)) {
                 var color = colorPalette[i % colorPalette.length];
@@ -122,47 +250,190 @@
                         iconAnchor: [30, 10]
                     })
                 }).addTo(map);
-                searchData.push({loc:[value.lat, value.lon], title:key});
             }
         }
 
-        // 圖例
-        var legend = L.control({position: 'bottomright'});
-        legend.onAdd = function () {
-            var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML = '<h4>系列圖例</h4>';
-            legendItems.forEach(function(item) {
-                div.innerHTML += '<div class="legend-item"><div class="legend-color" style="background:' + item.color + ';"></div>' + item.prefix + '</div>';
-            });
+        // 搜尋與匯出控制項
+        var searchExportControl = L.control({ position: 'topright' });
+        searchExportControl.onAdd = function (map) {
+            var container = L.DomUtil.create('div', 'leaflet-control-search-export');
+            
+            var searchContainer = L.DomUtil.create('div', 'suggestions-container');
+            searchContainer.innerHTML = `
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="輸入電號搜尋..." autocomplete="off">
+                    <button id="clear-search" title="清除搜尋">×</button>
+                </div>
+                <div id="suggestions-list"></div>
+            `;
+            container.appendChild(searchContainer);
+
+            var exportButton = L.DomUtil.create('button', 'export-button');
+            exportButton.id = 'export-button';
+            exportButton.innerHTML = '匯出地圖';
+            container.appendChild(exportButton);
+
+            L.DomEvent.disableClickPropagation(container);
+            return container;
+        };
+        searchExportControl.addTo(map);
+
+        // 自訂圖例與圖層控制選項
+        var legendLayersControl = L.control({ position: 'bottomright' });
+        legendLayersControl.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'leaflet-control-legend-layers');
+            div.innerHTML = `
+                <div class="legend-header">
+                    圖例與圖層
+                    <span id="toggle-icon">▼</span>
+                </div>
+                <div id="legend-content" class="legend-content visible">
+                    <h4>系列圖例</h4>
+                    <div id="legend-items"></div>
+                    <hr>
+                    <h4>圖層開關</h4>
+                    <div id="layer-controls"></div>
+                </div>
+            `;
             return div;
         };
-        legend.addTo(map);
+        legendLayersControl.addTo(map);
+        
+        // 渲染圖例和圖層開關
+        var legendContainer = document.getElementById('legend-items');
+        legendItems.forEach(function(item) {
+            var div = document.createElement('div');
+            div.className = 'legend-item';
+            div.innerHTML = `<div class="legend-color" style="background:${item.color};"></div><span>${item.prefix}</span>`;
+            legendContainer.appendChild(div);
+        });
+        
+        var layerControlContainer = document.getElementById('layer-controls');
+        for (const [key, layer] of Object.entries(layers)) {
+            var prefix = key.split('_')[0];
+            var type = key.split('_')[1] === 'heat' ? '熱力圖' : '點圖';
+            
+            var label = document.createElement('label');
+            label.className = 'layer-item';
+            
+            var checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            
+            // 調整後：熱力圖預設勾選，點圖預設不勾選
+            var is_heat_layer = (type === '熱力圖');
+            checkbox.checked = is_heat_layer;
+            
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    map.addLayer(layer);
+                } else {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            var text = document.createTextNode(prefix + ' 系列 (' + type + ')');
+            label.appendChild(checkbox);
+            label.appendChild(text);
+            layerControlContainer.appendChild(label);
+        }
 
+        // 圖例收合功能
+        document.querySelector('.legend-header').addEventListener('click', function() {
+            var content = document.getElementById('legend-content');
+            var icon = document.getElementById('toggle-icon');
+            if (content.classList.contains('visible')) {
+                content.classList.remove('visible');
+                icon.textContent = '▲';
+            } else {
+                content.classList.add('visible');
+                icon.textContent = '▼';
+            }
+        });
+        
         // 搜尋功能
-        var searchControl = new L.Control.Search({
-            layer: L.layerGroup(),
-            propertyName: 'title',
-            initial: false,
-            zoom: 15,
-            marker: false
-        });
-        searchControl._recordsCache = searchData.reduce((acc, item) => {
-            acc[item.title] = item.loc;
-            return acc;
-        }, {});
-        searchControl.on('search:locationfound', function(e) {
-            map.setView(e.latlng, 15);
-        });
-        map.addControl(searchControl);
+        var searchInput = document.getElementById('search-input');
+        var suggestionsList = document.getElementById('suggestions-list');
+        var clearSearchBtn = document.getElementById('clear-search');
 
-        // 匯出地圖 PNG
-        L.easyPrint({
-            title: '匯出地圖',
-            position: 'topleft',
-            sizeModes: ['A4Portrait', 'A4Landscape'],
-            filename: 'map_export',
-            exportOnly: true
-        }).addTo(map);
+        function performSearch(query) {
+            suggestionsList.innerHTML = '';
+            
+            if (query === '') {
+                suggestionsList.style.display = 'none';
+                clearSearchBtn.style.display = 'none';
+                return;
+            }
+            
+            clearSearchBtn.style.display = 'block';
+            
+            var filteredData = Object.values(search_data).filter(item => item.電號.includes(query));
+            
+            if (filteredData.length === 0) {
+                suggestionsList.style.display = 'block';
+                suggestionsList.innerHTML = '<div class="suggestion-item" style="cursor: default;">找不到任何資料</div>';
+                return;
+            }
+
+            suggestionsList.style.display = 'block';
+            filteredData.forEach(item => {
+                var suggestionItem = document.createElement('div');
+                suggestionItem.className = 'suggestion-item';
+                suggestionItem.innerHTML = `<div class="suggestion-title">${item.電號}</div>`;
+                suggestionItem.addEventListener('click', function() {
+                    if (searchMarker) {
+                        map.removeLayer(searchMarker);
+                    }
+                    searchMarker = L.marker([item.lat, item.lon]).addTo(map);
+                    searchMarker.bindPopup("<b>電號:</b> " + item.電號).openPopup();
+                    map.setView([item.lat, item.lon], 15);
+                    suggestionsList.style.display = 'none';
+                    searchInput.value = '';
+                    clearSearchBtn.style.display = 'none';
+                });
+                suggestionsList.appendChild(suggestionItem);
+            });
+        }
+
+        searchInput.addEventListener('input', function(e) {
+            performSearch(e.target.value.trim());
+        });
+
+        clearSearchBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            performSearch('');
+        });
+
+        map.on('click', function() {
+            suggestionsList.style.display = 'none';
+        });
+        L.DomEvent.disableClickPropagation(suggestionsList);
+        
+        // 手動匯出功能
+        document.getElementById('export-button').addEventListener('click', function() {
+            // 隱藏所有 Leaflet 控制項
+            document.querySelectorAll('.leaflet-control').forEach(el => {
+                el.style.visibility = 'hidden';
+            });
+            
+            var mapElement = document.getElementById('map');
+            html2canvas(mapElement, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 2
+            }).then(canvas => {
+                var imgData = canvas.toDataURL('image/png');
+                var link = document.createElement('a');
+                link.download = 'map_export.png';
+                link.href = imgData;
+                link.click();
+                
+                // 恢復顯示所有 Leaflet 控制項
+                document.querySelectorAll('.leaflet-control').forEach(el => {
+                    el.style.visibility = 'visible';
+                });
+                alert('圖片已成功匯出！');
+            });
+        });
     </script>
 </body>
 </html>
